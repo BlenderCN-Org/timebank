@@ -23,8 +23,8 @@ bl_info = {
     "description": "Save blender file named each process.",
     "warning": "",
     "support": "COMMUNITY",
-    "wiki_url": "",
-    "tracker_url": "",
+    "wiki_url": "https://github.com/rn9dfj3/timebank/wiki",
+    "tracker_url": "https://github.com/rn9dfj3/timebank/issues",
     "category": "System"
 }
 OPTION_SAVED = {'REGISTER'}
