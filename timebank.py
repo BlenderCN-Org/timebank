@@ -172,8 +172,66 @@ class SaveScripting(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class LoadLatest(bpy.types.Operator):
+    bl_idname = "wm.timebank_load_latest"
+    bl_label = "Load Latest file"
+    bl_description = "Load the latest file."
+    bl_options = OPTION_SAVED
+
+    def execute(self, context):
+        #save(self, context, SCRIPTING)
+        filepath = context.blend_data.filepath
+        if filepath == "":
+            #bpy.ops.wm.save_as_mainfile('INVOKE_AREA')
+            #return
+            return {'CANCELLED'}
+        path = Path(filepath)
+        suffix = path.suffix
+        stem = path.stem
+        first = stem.rfind("_")
+        base = stem
+        if first == -1:
+            return {'CANCELLED'}
+        else:
+            base = base[:first]
+            first = base.rfind("_")
+            if first == -1:
+                return {'CANCELLED'}                
+            else:
+                base = base[:first]
+                #self.report({'INFO'}, base)
+                parent = path.resolve()
+                files = parent.parent.glob(base+'*'+suffix)
+                max_num = 0
+                max_file = None
+                for file in files:
+                    file_stem = file.stem
+                    self.report({'INFO'}, file_stem)
+                    first = file_stem.rfind("_")
+                    num = file_stem[first+1:]
+                    if num.isdigit():
+                        self.report({'INFO'}, num)                        
+                        num = int(num)                        
+                        if num > max_num:
+                            max_num = num
+                            max_file = file
+                self.report({'INFO'}, "Loaded "+str(max_file))
+                bpy.ops.wm.open_mainfile(filepath=str(max_file))
+        return {'FINISHED'}
+
+
+class TimebankLoadMenu(bpy.types.Menu):
+    bl_label = "Load Timebank"
+    bl_idname = "INFO_MT_timebank_load_menu"
+
+    def draw(self, context):
+        layout = self.layout
+        layout.operator(LoadLatest.bl_idname)
+
+
 def menu_fn(self, context):
     self.layout.separator()
+    self.layout.menu(TimebankLoadMenu.bl_idname, icon="RECOVER_LAST")
     self.layout.operator(SaveModeling.bl_idname, icon='EDIT')
     self.layout.operator(SaveSkinning.bl_idname, icon='WPAINT_HLT')
     self.layout.operator(SaveTexturing.bl_idname, icon='TEXTURE')
