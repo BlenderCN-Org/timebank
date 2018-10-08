@@ -38,7 +38,14 @@ ANIMATING = 4
 RENDERING = 5
 COMPOSITING = 6
 SCRIPTING = 7
-
+MODELING_ICON = 'EDIT'
+SKINNING_ICON = 'WPAINT_HLT'
+TEXTURING_ICON = 'TEXTURE'
+MORPHING_ICON = 'SHAPEKEY_DATA'
+ANIMATING_ICON = 'ACTION'
+RENDERING_ICON = 'RENDER_STILL'
+COMPOSITING_ICON = 'NODETREE'
+SCRIPTING_ICON = 'TEXT'
 
 def save(self, context, type):
         filepath = context.blend_data.filepath
@@ -192,33 +199,79 @@ class LoadLatest(bpy.types.Operator):
         base = stem
         if first == -1:
             return {'CANCELLED'}
-        else:
-            base = base[:first]
-            first = base.rfind("_")
-            if first == -1:
-                return {'CANCELLED'}                
-            else:
-                base = base[:first]
-                #self.report({'INFO'}, base)
-                parent = path.resolve()
-                files = parent.parent.glob(base+'*'+suffix)
-                max_num = 0
-                max_file = None
-                for file in files:
-                    file_stem = file.stem
-                    self.report({'INFO'}, file_stem)
-                    first = file_stem.rfind("_")
-                    num = file_stem[first+1:]
-                    if num.isdigit():
-                        self.report({'INFO'}, num)                        
-                        num = int(num)                        
-                        if num > max_num:
-                            max_num = num
-                            max_file = file
-                self.report({'INFO'}, "Loaded "+str(max_file))
-                bpy.ops.wm.open_mainfile(filepath=str(max_file))
+        base = base[:first]
+        first = base.rfind("_")
+        if first == -1:
+            return {'CANCELLED'}                
+        base = base[:first]
+        #self.report({'INFO'}, base)
+        parent = path.resolve()
+        files = parent.parent.glob(base+'*'+suffix)
+        max_num = 0
+        max_file = None
+        for file in files:
+            file_stem = file.stem
+            if not file_stem.startswith(base):
+                continue
+            #self.report({'INFO'}, file_stem)
+            first = file_stem.rfind("_")
+            num = file_stem[first+1:]
+            if num.isdigit():
+                #self.report({'INFO'}, num)                        
+                num = int(num)                        
+                if num > max_num:
+                    max_num = num
+                    max_file = file
+        self.report({'INFO'}, "Loaded "+str(max_file))
+        bpy.ops.wm.open_mainfile(filepath=str(max_file))
         return {'FINISHED'}
 
+#class Load(bpy.types.Operator):
+#    bl_idname = "wm.timebank_load"
+#    bl_label = "Load"
+#    bl_description = "Load the file."
+#    bl_options = OPTION_SAVED
+
+#    def execute(self, context):
+#        #save(self, context, SCRIPTING)
+#        filepath = context.blend_data.filepath
+#        if filepath == "":
+#            #bpy.ops.wm.save_as_mainfile('INVOKE_AREA')
+#            #return
+#            return {'CANCELLED'}
+#        path = Path(filepath)
+#        suffix = path.suffix
+#        stem = path.stem
+#        first = stem.rfind("_")
+#        base = stem
+#        if first == -1:
+#            return {'CANCELLED'}
+#        else:
+#            base = base[:first]
+#            first = base.rfind("_")
+#            if first == -1:
+#                return {'CANCELLED'}                
+#            else:
+#                base = base[:first]
+#                #self.report({'INFO'}, base)
+#                parent = path.resolve()
+#                files = parent.parent.glob(base+'*'+suffix)
+#                max_num = 0
+#                max_file = None
+#                #for file in files:
+#                #    file_stem = file.stem
+#                #    self.report({'INFO'}, file_stem)
+#                #    first = file_stem.rfind("_")
+#                #    num = file_stem[first+1:]
+#                #    if num.isdigit():
+#                #        self.report({'INFO'}, num)                        
+#                #        num = int(num)                        
+#                #        if num > max_num:
+#                #            max_num = num
+#                #            max_file = file
+#                self.report({'INFO'}, "Loaded "+str(max_file))
+#                bpy.ops.wm.open_mainfile(filepath=str(max_file))
+#        return {'FINISHED'}
 
 class TimebankLoadMenu(bpy.types.Menu):
     bl_label = "Load Timebank"
@@ -227,19 +280,102 @@ class TimebankLoadMenu(bpy.types.Menu):
     def draw(self, context):
         layout = self.layout
         layout.operator(LoadLatest.bl_idname)
+        layout.menu(TimebankAllMenu.bl_idname, icon="RECOVER_LAST")
+        
+        
+class TimebankAllMenu(bpy.types.Menu):
+    bl_label = "All files"
+    bl_idname = "INFO_MT_timebank_all_menu"
 
+    def draw(self, context):
+        layout = self.layout
+        layout.operator_context = 'EXEC_DEFAULT'
+        filepath = context.blend_data.filepath
+        if filepath == "":
+            return
+        path = Path(filepath)
+        suffix = path.suffix
+        stem = path.stem
+        first = stem.rfind("_")
+        base = stem
+        if first == -1:
+            return
+        base = base[:first]
+        first = base.rfind("_")
+        if first == -1:
+            return
+        base = base[:first]
+        #self.report({'INFO'}, base)
+        parent = path.resolve()
+        files = parent.parent.glob(base+'*'+suffix)
+        files = sorted(files, key = num_fn, reverse=True)
+        #max_num = 0
+        #max_file = None
+        for file in files:
+            file_stem = file.stem
+            #layout.label(text=file_stem)
+            first = file_stem.rfind("_")
+            if first == -1:
+                continue
+            pro = file_stem[:first]
+            first = pro.rfind("_")
+            if first == -1:
+                continue
+            pro = pro[first+1:]
+            icon = "NONE"
+            if pro == PROCESSES[MODELING]:
+                icon = MODELING_ICON
+            if pro == PROCESSES[SKINNING]:
+                icon = SKINNING_ICON
+            if pro == PROCESSES[TEXTURING]:
+                icon = TEXTURING_ICON
+            if pro == PROCESSES[MORPHING]:
+                icon = MORPHING_ICON
+            if pro == PROCESSES[ANIMATING]:
+                icon = ANIMATING_ICON
+            if pro == PROCESSES[RENDERING]:
+                icon = RENDERING_ICON
+            if pro == PROCESSES[COMPOSITING]:
+                icon = COMPOSITING_ICON
+            if pro == PROCESSES[SCRIPTING]:
+                icon = SCRIPTING_ICON
+            if icon == "NONE":
+                continue
+            op = layout.operator("wm.open_mainfile", text = file.name, icon=icon)
+            op.filepath = str(file)
+            #op.bl_options = OPTION_SAVED
+            #op.label = file.name
+        #    self.report({'INFO'}, file_stem)
+        #    first = file_stem.rfind("_")
+        #    num = file_stem[first+1:]
+        #    if num.isdigit():
+        #        self.report({'INFO'}, num)                        
+        #        num = int(num)                        
+        #        if num > max_num:
+        #            max_num = num
+        #            max_file = file
+        #self.report({'INFO'}, "Loaded "+str(max_file))
+        #bpy.ops.wm.open_mainfile(filepath=str(max_file))
+
+def num_fn(file):
+    stem = file.stem
+    first = stem.rfind("_")
+    num = stem[first+1:]
+    if not num.isdigit():
+        num = -1
+    return int(num)
 
 def menu_fn(self, context):
     self.layout.separator()
     self.layout.menu(TimebankLoadMenu.bl_idname, icon="RECOVER_LAST")
-    self.layout.operator(SaveModeling.bl_idname, icon='EDIT')
-    self.layout.operator(SaveSkinning.bl_idname, icon='WPAINT_HLT')
-    self.layout.operator(SaveTexturing.bl_idname, icon='TEXTURE')
-    self.layout.operator(SaveMorphing.bl_idname, icon='SHAPEKEY_DATA')
-    self.layout.operator(SaveAnimating.bl_idname, icon='ACTION')
-    self.layout.operator(SaveRendering.bl_idname, icon='RENDER_STILL')
-    self.layout.operator(SaveCompositing.bl_idname, icon='NODETREE')
-    self.layout.operator(SaveScripting.bl_idname, icon='TEXT')
+    self.layout.operator(SaveModeling.bl_idname, icon=MODELING_ICON)
+    self.layout.operator(SaveSkinning.bl_idname, icon=SKINNING_ICON)
+    self.layout.operator(SaveTexturing.bl_idname, icon=TEXTURING_ICON)
+    self.layout.operator(SaveMorphing.bl_idname, icon=MORPHING_ICON)
+    self.layout.operator(SaveAnimating.bl_idname, icon=ANIMATING_ICON)
+    self.layout.operator(SaveRendering.bl_idname, icon=RENDERING_ICON)
+    self.layout.operator(SaveCompositing.bl_idname, icon=COMPOSITING_ICON)
+    self.layout.operator(SaveScripting.bl_idname, icon=SCRIPTING_ICON)
 
 
 def register():
