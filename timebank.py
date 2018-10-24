@@ -527,7 +527,7 @@ def menu_fn(self, context):
     self.layout.operator(SaveRendering.bl_idname, icon=RENDERING_ICON)
     self.layout.operator(SaveCompositing.bl_idname, icon=COMPOSITING_ICON)
     self.layout.operator(SaveScripting.bl_idname, icon=SCRIPTING_ICON)
-    self.layout.operator(SaveAuto.bl_idname, icon=SCRIPTING_ICON)
+    #self.layout.operator(SaveAuto.bl_idname, icon=SCRIPTING_ICON)
     
 class TIMEBANK_Preferences(bpy.types.AddonPreferences):
     bl_idname = __name__
