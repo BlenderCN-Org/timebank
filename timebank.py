@@ -288,9 +288,10 @@ class SaveAuto(bpy.types.Operator):
     bl_label = "Save Auto"
     bl_description = "Save the file automatically"
     bl_options = {'REGISTER'}
-    start = None
-    processes = []
+    #start = None
+    processes = None
     _timer = None
+    current = 0
     
     def execute(self, context):
         #self.report({"INFO"}, "1")
@@ -311,8 +312,8 @@ class SaveAuto(bpy.types.Operator):
         window_area = window.width * window.height
         #x = event.mouse_x
         #y = event.mouse_y
-        current = datetime.now()
-        end = self.start + timedelta(seconds=1)
+        #current = datetime.now()
+        #end = self.start + timedelta(seconds=1)
 #        if current > end:
         #self.report({"INFO"}, ".")
         #self.report({"INFO"}, bpy.context.mode)
@@ -333,7 +334,7 @@ class SaveAuto(bpy.types.Operator):
             if area.type in ["VIEW_3D"]:
                 #self.report({"INFO"}, "c"+context.mode)                        
                 #self.report({"INFO"}, "b"+bpy.context.mode)                        
-                if context.mode in ["EDIT_MESH", "EDIT_CURVE", "EDIT_SURFACE", "EDIT_TEXT", "EDIT_METABALL", "EDIT_LATTICE", "SCULPT","PARTICLE"]:
+                if context.mode in ["OBJECT","EDIT_MESH", "EDIT_CURVE", "EDIT_SURFACE", "EDIT_TEXT", "EDIT_METABALL", "EDIT_LATTICE", "SCULPT","PARTICLE"]:
                     process_area[MODELING] += ratio
                 if context.mode in ["EDIT_ARMATURE", "PAINT_WEIGHT"]:
                     process_area[SKINNING] += ratio
@@ -342,7 +343,15 @@ class SaveAuto(bpy.types.Operator):
                     process_area[ANIMATING] += ratio                    
                 if context.mode in ["PAINT_TEXTURE"]:
                     process_area[TEXTURING] += ratio
-        self.processes.append(process_area)
+        self.current +=1
+        self.processes[MODELING] += process_area[MODELING]
+        self.processes[SKINNING] += process_area[SKINNING]
+        self.processes[TEXTURING] += process_area[TEXTURING]
+        self.processes[MORPHING] += process_area[MORPHING]
+        self.processes[ANIMATING] += process_area[ANIMATING]
+        self.processes[RENDERING] += process_area[RENDERING]
+        self.processes[COMPOSITING] += process_area[COMPOSITING]
+        self.processes[SCRIPTING] += process_area[SCRIPTING]
             #h = area.x <= x and x < area.x + area.width
             #v = area.y <= y and y < area.y + area.height
             #if h and v:
@@ -360,13 +369,18 @@ class SaveAuto(bpy.types.Operator):
             #        self.processes.append(RENDERING)
             #    if area.type in ["VIEW_3D"]:
             #        self.processes.append(MODELING)                        
-        self.start = current
+        #self.start = current
         num = context.user_preferences.addons[__name__].preferences.saveauto_interval
-        if len(self.processes) >= num:
-            ps = [[n, 0.0] for n in range(ALL)]                
-            for process in  self.processes:
-                for p in range(ALL):
-                    ps[p][RATIO] += process[p]
+        if self.current >= num:
+            ps = [[n, 0.0] for n in range(ALL)]
+            ps[MODELING][RATIO] = self.processes[MODELING]
+            ps[SKINNING][RATIO] = self.processes[SKINNING]            
+            ps[TEXTURING][RATIO] = self.processes[TEXTURING]
+            ps[MORPHING][RATIO] = self.processes[MORPHING]
+            ps[ANIMATING][RATIO] = self.processes[ANIMATING]
+            ps[RENDERING][RATIO] = self.processes[RENDERING]
+            ps[COMPOSITING][RATIO] = self.processes[COMPOSITING]
+            ps[SCRIPTING][RATIO] = self.processes[SCRIPTING]            
             ranks = sorted(ps,  key=lambda p: p[1], reverse=True)
             first = ranks[0][PROCESS]
             second = ranks[1][PROCESS]
@@ -380,15 +394,18 @@ class SaveAuto(bpy.types.Operator):
                     self.save(context, first)
             else:
                 self.save(context, first)
-            self.processes = []
-        #return {'PASS_THROUGH'}        
+            self.processes = {MODELING:0.0, SKINNING:0.0, TEXTURING:0.0, MORPHING:0.0, ANIMATING:0.0, RENDERING:0.0, COMPOSITING:0.0, SCRIPTING:0.0}
+            self.current = 0
+        #return {'PASS_THROUGH'}
         return {'RUNNING_MODAL'}
 
     def invoke(self, context, event):
         #self.report({"INFO"}, "1")
         context.user_preferences.addons[__name__].preferences.saveauto_run = True
-        self.start = datetime.now()
-        self.processes = []
+        #self.start = datetime.now()
+        #self.processes = []
+        self.current = 0
+        self.processes = {MODELING:0.0, SKINNING:0.0, TEXTURING:0.0, MORPHING:0.0, ANIMATING:0.0, RENDERING:0.0, COMPOSITING:0.0, SCRIPTING:0.0}
         self._timer = context.window_manager.event_timer_add(1.0, context.window)
         context.window_manager.modal_handler_add(self)
         return {'RUNNING_MODAL'}
