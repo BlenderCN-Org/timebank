@@ -189,6 +189,27 @@ class SaveScripting(bpy.types.Operator):
         return {'FINISHED'}
 
 
+class Laod(bpy.types.Operator):
+    bl_idname = "wm.timebank_load"
+    bl_label = "Load file"
+    bl_description = "Load the blender file."
+    bl_options = OPTION_SAVED
+    #bl_options = "INTERNAL"
+    filepath = bpy.props.StringProperty(name="Filepath", description="Filepath to open mainfile.")#, options="HIDDEN")
+    
+    def execute(self, context):
+        bpy.ops.wm.open_mainfile(filepath=self.filepath)
+        self.report({'INFO'}, "Loaded " + self.filepath)        
+        return {'FINISHED'}
+    
+    def invoke(self, context, event):
+        wm = context.window_manager
+        #return wm.invoke_props_dialog(self)
+        return wm.invoke_confirm(self, event)        
+    #def draw(self, context):
+    #    layout = self.layout
+    #    #layout.label("Load?")
+    
 class LoadLatest(bpy.types.Operator):
     bl_idname = "wm.timebank_load_latest"
     bl_label = "Load Latest file"
@@ -232,10 +253,17 @@ class LoadLatest(bpy.types.Operator):
                 if num > max_num:
                     max_num = num
                     max_file = file
-        self.report({'INFO'}, "Loaded "+str(max_file))
-        bpy.ops.wm.open_mainfile(filepath=str(max_file))
+#        bpy.ops.wm.open_mainfile(filepath=str(max_file))
+#        self.report({'INFO'}, "Loaded "+str(max_file))        
+        bpy.ops.wm.timebank_load("INVOKE_DEFAULT", filepath = str(max_file))
         return {'FINISHED'}
-
+    
+#    def invoke(self, context, event):
+#            wm = context.window_manager
+#            return wm.invoke_props_dialog(self)
+    #def draw(self, context):
+    #    layout = self.layout
+    #    layout.label("Load?")
 #class Load(bpy.types.Operator):
 #    bl_idname = "wm.timebank_load"
 #    bl_label = "Load"
@@ -447,6 +475,7 @@ class TimebankLoadMenu(bpy.types.Menu):
 
     def draw(self, context):
         layout = self.layout
+        #layout.operator_context = "INVOKE_DEFAULT"
         layout.operator(LoadLatest.bl_idname)
         layout.menu(TimebankAllMenu.bl_idname, icon="RECOVER_LAST")
         
@@ -457,7 +486,8 @@ class TimebankAllMenu(bpy.types.Menu):
 
     def draw(self, context):
         layout = self.layout
-        layout.operator_context = 'EXEC_DEFAULT'
+        #layout.operator_context = 'EXEC_DEFAULT'
+        layout.operator_context = "INVOKE_DEFAULT"
         filepath = context.blend_data.filepath
         if filepath == "":
             return
@@ -509,7 +539,9 @@ class TimebankAllMenu(bpy.types.Menu):
                 icon = SCRIPTING_ICON
             if icon == "NONE":
                 continue
-            op = layout.operator("wm.open_mainfile", text = file.name, icon=icon)
+            #op = layout.operator("wm.open_mainfile", text = file.name, icon=icon)
+            op = layout.operator("wm.timebank_load", text = file.name, icon=icon)
+            #bpy.ops.wm.timebank_load("INVOKE_DEFAULT", filepath = str(max_file))
             op.filepath = str(file)
             #op.bl_options = OPTION_SAVED
             #op.label = file.name
